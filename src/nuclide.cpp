@@ -6,6 +6,7 @@
 #include <map>
 #include <sstream>
 #include <memory>
+#include <cstring>
 #include "../extern/pugiData/pugixml.h"
 #include "openbps/configure.h"
 #include "openbps/capi.h"
@@ -159,7 +160,7 @@ std::vector<std::pair<std::string, std::string>> ChainNuclide::get_reactions() {
 //! Get an energy release per reaction for nuclide
 std::map<std::string, double> ChainNuclide::get_qvalue() {
     std::map<std::string, double> result;
-    for (int i = 0; i < this->reaction_arr.size(); i++) 
+    for (int i = 0; i < this->reaction_arr.size(); i++)
         if (this->reaction_arr[i].q > 0)
             result[this->reaction_arr[i].type] = this->reaction_arr[i].q;
     return result;
@@ -231,7 +232,7 @@ openbps_get_nuclidearray_index (const char* name)
     int err = 0;
     try {
         openbps::get_nuclidarray_index({name});
-      
+
     } catch (const std::runtime_error& e) {
         return OPENBPS_E_DATA;
     }
@@ -244,7 +245,7 @@ openbps_read_nuclide_xml (const char* filepath)
     int err = 0;
     try {
         openbps::read_nuclide_xml({filepath});
-      
+
     } catch (const std::runtime_error& e) {
         return OPENBPS_E_DATA;
     }

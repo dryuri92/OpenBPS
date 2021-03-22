@@ -23,6 +23,7 @@
 #include "openbps/reactions.h"
 #include "openbps/filter.h"
 #include "openbps/matrix.h"
+#include "openbps/capi.h"
 
 //==============================================================================
 // Type definitions
@@ -136,6 +137,7 @@ void init_solver() {
         // Make bind between materials and compositions
         matchcompositions();
     }
+
 }
 
 //! Run a calculation process
@@ -143,8 +145,8 @@ void run_solver() {
     bool isMaterial {false};
     if (configure::verbose)
         std::cout << "We start execution\n";
-    // Read a chain from xml file
-    *chain = read_chain_xml(configure::chain_file);
+     // Read a chain from xml file
+    read_chain_xml(configure::chain_file);
     // Form a calculation matrix
     DecayMatrix dm(chain->name_idx.size());
     dm.form_matrixreal(*chain);
@@ -686,3 +688,27 @@ void apply_filters(const Chain &chainer, const std::string& matname) {
 }//namespace executer
 
 }//namespace openbps
+extern "C" int
+openbps_init(int argc, char* argv[]) {
+    using namespace openbps;
+    // Read input data
+    configure::parse_command_line(argc, argv);
+    // Read configure.xml
+    read_input_xml();
+    // Initialize solver
+    executer::init_solver();
+    return 0;
+}
+
+extern "C" int
+openbps_run() {
+    using namespace openbps;
+    // Run execution
+    executer::run_solver();
+    return 0;
+}
+
+extern "C" int
+openbps_finalize() {
+    return 0;
+}

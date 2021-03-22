@@ -10,6 +10,24 @@
 #include "openbps/chain.h"
 #include "openbps/nuclide.h"
 #include "openbps/materials.h"
+#include "openbps/capi.h"
+
+//==============================================================================
+// Global variables / constants
+//==============================================================================
+
+// Error codes
+int OPENBPS_E_UNASSIGNED {-1};
+int OPENBPS_E_ALLOCATE {-2};
+int OPENBPS_E_OUT_OF_BOUNDS {-3};
+int OPENBPS_E_INVALID_SIZE {-4};
+int OPENBPS_E_INVALID_ARGUMENT {-5};
+int OPENBPS_E_INVALID_TYPE {-6};
+int OPENBPS_E_INVALID_ID {-7};
+int OPENBPS_E_GEOMETRY {-8};
+int OPENBPS_E_DATA {-9};
+int OPENBPS_E_PHYSICS {-10};
+int OPENBPS_E_WARNING {1};
 
 namespace openbps {
 
@@ -45,17 +63,19 @@ bool rewrite {true};              //!< Whether to rewrite a concentration
 bool outwrite{true};              //!< Write calculation result in file
 std::vector<std::vector<std::array<double, 2>>>
 dumpoutput;                       //!< Ouput dump
-bool uncertantie_mod{false};      //!< Calculation mode with taking account 
+bool uncertantie_mod{false};      //!< Calculation mode with taking account
                                   //!< uncertanties
 bool decay_extra_out{false};      //!< Print out more information about
                                   //!< energy decay
-bool verbose{false};              //!< Print information in out pipe
+bool verbose{true};              //!< Print information in out pipe
 std::array<std::string,5>
 header_names {"dt",
               "heat",
               "decay-rate",
               "dheat",
               "ddr"};             //!< Name of header in the ouput file
+
+
 
 //==============================================================================
 // Non class methods implementation
@@ -196,7 +216,6 @@ void read_input_xml()
 }
 
 } // namespace openbps
-
 
 
 

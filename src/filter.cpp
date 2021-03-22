@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
+#include <cstring>
 #include "../extern/pugiData/pugixml.h"
 #include "openbps/parse.h"
 #include "openbps/capi.h"
@@ -162,14 +163,14 @@ openbps_material_filter_get_bins (char*** out)
 {
     int err = 0;
     try {
-      size_t i = 0;  
+      size_t i = 0;
       for (const auto& el : openbps::materialfilter->bins_) {
         std::strcpy((*out)[i], el.c_str());
         i++;
       }
     } catch (const std::runtime_error& e) {
       return OPENBPS_E_DATA;
-    } 
+    }
   return err;
 }
 
@@ -181,7 +182,7 @@ openbps_material_filter_add_bin(char* bin)
       openbps::materialfilter->bins_.push_back({bin});
     } catch (const std::runtime_error& e) {
       return OPENBPS_E_DATA;
-    } 
+    }
   return err;
 }
 
@@ -192,12 +193,12 @@ openbps_material_filter_delete_bin(char* bin)
     try {
       auto it = std::find(openbps::materialfilter->bins_.begin(),
         openbps::materialfilter->bins_.end(), std::string(bin));
-        if (it != openbps::materialfilter->bins_.end()){ 
+        if (it != openbps::materialfilter->bins_.end()){
             openbps::materialfilter->bins_.erase(it);
         }
     } catch (const std::runtime_error& e) {
       return OPENBPS_E_DATA;
-    } 
+    }
   return err;
 }
 
@@ -208,7 +209,7 @@ openbps_filters_get_bins_by_idx(int32_t index, char*** out)
   if (index >= 0 && index < openbps::filters.size()) {
     std::vector<int> tmp_indices; //clean indices in input (if Im not wrong)
     try {
-      size_t i = 0;  
+      size_t i = 0;
       for (const auto& el : openbps::filters[index].bins_) {
         std::strcpy((*out)[i], el.c_str());
         i++;
@@ -250,7 +251,7 @@ openbps_filters_delete_bin_by_idx(int32_t index, char* bin)
     try {
         auto it = std::find(openbps::filters[index].bins_.begin(),
         openbps::filters[index].bins_.end(), std::string(bin));
-        if (it != openbps::materialfilter->bins_.end()){ 
+        if (it != openbps::materialfilter->bins_.end()){
             openbps::materialfilter->bins_.erase(it);
         }
     } catch (const std::runtime_error& e) {
@@ -271,7 +272,7 @@ openbps_time_filter_get_bins (double** out)
         *out = openbps::timefilter->bins_.data();
     } catch (const std::runtime_error& e) {
       return OPENBPS_E_DATA;
-    } 
+    }
   return err;
 }
 
@@ -283,7 +284,7 @@ openbps_time_filter_add_bin (double bin)
       openbps::timefilter->bins_.push_back(bin);
     } catch (const std::runtime_error& e) {
       return OPENBPS_E_DATA;
-    } 
+    }
   return err;
 }
 
@@ -294,11 +295,11 @@ openbps_time_filter_delete_bin(double bin)
     try {
       auto it = std::find(openbps::timefilter->bins_.begin(),
         openbps::timefilter->bins_.end(), bin);
-        if (it != openbps::timefilter->bins_.end()){ 
+        if (it != openbps::timefilter->bins_.end()){
             openbps::timefilter->bins_.erase(it);
         }
     } catch (const std::runtime_error& e) {
       return OPENBPS_E_DATA;
-    } 
+    }
   return err;
 }

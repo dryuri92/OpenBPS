@@ -2,7 +2,9 @@
 #include "openbps/configure.h"
 #include "openbps/parse.h"
 #include "openbps/nuclide.h"
+#include <cstring>
 #include <memory>
+#include <stdlib.h>
 #include <algorithm>
 #include "../extern/pugiData/pugixml.h"
 #include "openbps/reactions.h"
@@ -144,43 +146,39 @@ void matchcompositions() {
 // C API
 //==============================================================================
 
-extern "C" int
-openbps_material_add_nuclide(int32_t index, const char* extname, double real, double dev)
-{
-  int err = 0;
-  if (index >= 0 && index < openbps::materials.size()) {
-    try {
-      openbps::materials[index]->add_nuclide(extname, {real, dev});
-    } catch (const std::runtime_error& e) {
-      return OPENBPS_E_DATA;
+extern "C" int openbps_material_add_nuclide(int32_t index, const char* extname,
+                                            double real, double dev) {
+    int err = 0;
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            openbps::materials[index]->add_nuclide(extname, {real, dev});
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+        //    set_errmsg("Index in materials array is out of bounds.");
+        return OPENBPS_E_OUT_OF_BOUNDS;
     }
-  } else {
-//    set_errmsg("Index in materials array is out of bounds.");
-    return OPENBPS_E_OUT_OF_BOUNDS;
-  }
-  return err;
+    return err;
 }
 
-extern "C" int
-openbps_material_delete_nuclide(int32_t index, const char* extname)
-{
-  int err = 0;
-  if (index >= 0 && index < openbps::materials.size()) {
-    try {
-      openbps::materials[index]->delete_nuclide(extname);
-    } catch (const std::runtime_error& e) {
-      return OPENBPS_E_DATA;
+extern "C" int openbps_material_delete_nuclide(int32_t index,
+                                               const char* extname) {
+    int err = 0;
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            openbps::materials[index]->delete_nuclide(extname);
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+        //    set_errmsg("Index in materials array is out of bounds.");
+        return OPENBPS_E_OUT_OF_BOUNDS;
     }
-  } else {
-//    set_errmsg("Index in materials array is out of bounds.");
-    return OPENBPS_E_OUT_OF_BOUNDS;
-  }
-  return err;
+    return err;
 }
 
-extern "C" int
-openbps_material_matchcompositions()
-{
+extern "C" int openbps_material_matchcompositions() {
     try {
         openbps::matchcompositions();
     } catch (const std::runtime_error& e) {
@@ -189,9 +187,7 @@ openbps_material_matchcompositions()
     return 0;
 }
 
-extern "C" int
-openbps_read_materials_from_inp(char* inp_path)
-{
+extern "C" int openbps_read_materials_from_inp(char* inp_path) {
     try {
         openbps::read_materials_from_inp({inp_path});
     } catch (const std::runtime_error& e) {
@@ -200,9 +196,7 @@ openbps_read_materials_from_inp(char* inp_path)
     return 0;
 }
 
-extern "C" int
-openbps_form_materials_xml(char* inp_path)
-{
+extern "C" int openbps_form_materials_xml(char* inp_path) {
     try {
         openbps::form_materials_xml({inp_path});
     } catch (const std::runtime_error& e) {
@@ -211,51 +205,198 @@ openbps_form_materials_xml(char* inp_path)
     return 0;
 }
 
-extern "C" int
-openbps_material_add(char* name, double volume, double power, double mass)
-{
+extern "C" int openbps_material_add(char* name, double volume, double power,
+                                    double mass) {
     int err = 0;
     try {
-      openbps::materials.push_back(std::make_unique<openbps::Materials>(std::string(name), volume, power, mass));
+        openbps::materials.push_back(std::make_unique<openbps::Materials>(
+            std::string(name), volume, power, mass));
     } catch (const std::runtime_error& e) {
-      return OPENBPS_E_DATA;
+        return OPENBPS_E_DATA;
     }
     return err;
 }
 
-extern "C" int
-openbps_material_set_params_by_idx(int32_t index, char* name, double volume, double power, double mass)
-{
-  int err = 0;
-  if (index >= 0 && index < openbps::materials.size()) {
-    try {
-      openbps::materials[index]->setMass(mass);
-      openbps::materials[index]->setName({name});
-      openbps::materials[index]->setVolume(volume);
-      openbps::materials[index]->setPower(power);
-    } catch (const std::runtime_error& e) {
-      return OPENBPS_E_DATA;
+extern "C" int openbps_material_set_params_by_idx(int32_t index, char* name,
+                                                  double volume, double power,
+                                                  double mass) {
+    int err = 0;
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            openbps::materials[index]->setMass(mass);
+            openbps::materials[index]->setName({name});
+            openbps::materials[index]->setVolume(volume);
+            openbps::materials[index]->setPower(power);
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+        //    set_errmsg("Index in materials array is out of bounds.");
+        return OPENBPS_E_OUT_OF_BOUNDS;
     }
-  } else {
-//    set_errmsg("Index in materials array is out of bounds.");
-    return OPENBPS_E_OUT_OF_BOUNDS;
-  }
-  return err;
+    return err;
 }
 
-extern "C" int
-openbps_material_delete_by_idx(int32_t index)
-{
-  int err = 0;
-  if (index >= 0 && index < openbps::materials.size()) {
-    try {
-      openbps::materials.erase(openbps::materials.begin() + index);
-    } catch (const std::runtime_error& e) {
-      return OPENBPS_E_DATA;
+extern "C" int openbps_material_delete_by_idx(int32_t index) {
+    int err = 0;
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            openbps::materials.erase(openbps::materials.begin() + index);
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+        //    set_errmsg("Index in materials array is out of bounds.");
+        return OPENBPS_E_OUT_OF_BOUNDS;
     }
-  } else {
-//    set_errmsg("Index in materials array is out of bounds.");
-    return OPENBPS_E_OUT_OF_BOUNDS;
-  }
-  return err;
+    return err;
+}
+
+extern "C" int openbps_materials_get_size(size_t* s) {
+    try {
+        *s = openbps::materials.size();
+    } catch (const std::runtime_error& e) {
+        return OPENBPS_E_DATA;
+    }
+    return 0;
+}
+
+extern "C" int openbps_material_get_params_by_idx(int32_t index, char** name,
+                                                  double* mass, double* volume,
+                                                  double* power) {
+    int err = 0;
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            *name = openbps::materials[index]->Name().data();
+            *mass = openbps::materials[index]->Mass();
+            *volume = openbps::materials[index]->Volume();
+            *power = openbps::materials[index]->Power();
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+        //    set_errmsg("Index in materials array is out of bounds.");
+        return OPENBPS_E_OUT_OF_BOUNDS;
+    }
+    return err;
+}
+
+extern "C" int openbps_material_set_nuclides_conc(int32_t index, char* name,
+                                                  double realconc,
+                                                  double devconc) {
+    int err = 0;
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            std::string extname {name};
+            auto it = std::find(openbps::materials[index]->namenuclides.begin(),
+                        openbps::materials[index]->namenuclides.end(), extname);
+            if (it != openbps::materials[index]->namenuclides.end()) {
+                //auto index = std::distance(openbps::materials[index]->namenuclides.begin(), it);
+                openbps::materials[index]->conc[it - openbps::materials[index]->namenuclides.begin()] = {realconc, devconc};
+            }
+
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+        //    set_errmsg("Index in materials array is out of bounds.");
+        return OPENBPS_E_OUT_OF_BOUNDS;
+    }
+    return err;
+}
+
+extern "C" int openbps_material_get_nuclides_by_idx(int32_t index,
+                                                    char*** nuclides,
+                                                    int* pSize) {
+    int err = 0;
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            size_t i = 0;
+            int len = openbps::materials[index]->namenuclides.size();
+            if (*pSize != len) {
+                if (*pSize == 0) {
+                    *pSize = len;
+                    *nuclides = (char**)malloc(*pSize);
+                } else {
+                    *pSize = len;
+                    *nuclides = (char**)realloc(*nuclides, *pSize);
+                }
+            }
+            for (auto& el : openbps::materials[index]->namenuclides) {
+                (*nuclides)[i] = const_cast<char*>(el.c_str());
+                i++;
+            }
+
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+        //    set_errmsg("Index in materials array is out of bounds.");
+        return OPENBPS_E_OUT_OF_BOUNDS;
+    }
+    return err;
+}
+
+extern "C" int openbps_material_get_conc_by_idx(int32_t index, double** real,
+                                                               double** dev,
+                                                               int* pSize) {
+    int err = 0;
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            size_t i = 0;
+            int len = openbps::materials[index]->namenuclides.size();
+            if (*pSize != len) {
+                if (*pSize == 0) {
+                    *pSize = len;
+                    *real = (double*)malloc(*pSize);
+                    *dev = (double*)malloc(*pSize);
+                } else {
+                    *pSize = len;
+                    *real = (double*)realloc(*real, *pSize);
+                    *dev = (double*)realloc(*dev, *pSize);
+                }
+            }
+            for (auto& el : openbps::materials[index]->conc) {
+                (*real)[i] = el.Real();
+                (*dev)[i] = el.Dev();
+                i++;
+            }
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+
+        return OPENBPS_E_OUT_OF_BOUNDS;
+    }
+    return err;
+}
+
+extern "C" int openbps_material_get_idx_nuclides_by_idx(int32_t index,
+                                                        int** index_nuclides,
+                                                        int* pSize) {
+    int err = 0;
+
+    if (index >= 0 && index < openbps::materials.size()) {
+        try {
+            int len = openbps::materials[index]->namenuclides.size();
+            if (*pSize != len) {
+                if (*pSize == 0) {
+                    *pSize = len;
+                    *index_nuclides = (int*)malloc(*pSize);
+                } else {
+                    *pSize = len;
+                    *index_nuclides = (int*)realloc(*index_nuclides, *pSize);
+                }
+            }
+            for (int i = 0; i < *pSize; i++) {
+                (*index_nuclides)[i] = openbps::materials[index]->indexnuclides[i];
+            }
+        } catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
+
+        return OPENBPS_E_OUT_OF_BOUNDS;
+    }
+    return err;
 }

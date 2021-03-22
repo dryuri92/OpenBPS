@@ -100,6 +100,7 @@ list(APPEND lib_SOURCES
       "extern/pugiData/pugixml.cpp")
 
 add_library(openbps_lib STATIC ${lib_SOURCES})
+add_library(libopenbps SHARED ${lib_SOURCES})
 # Includes
 target_include_directories(openbps_lib
   PUBLIC
@@ -110,6 +111,18 @@ target_include_directories(openbps_lib
 target_compile_options(openbps_lib PRIVATE ${cxxflags})
 # Link library
 target_link_libraries(openbps_lib Eigen3::Eigen xtensor)
+
+# Includes
+target_include_directories(libopenbps
+  PUBLIC
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+# Set compile flags
+target_compile_options(libopenbps PRIVATE ${cxxflags})
+# Link library
+target_link_libraries(libopenbps Eigen3::Eigen xtensor)
+
 
 add_executable(openbps "../src/main.cpp" )
 # Set compile flags

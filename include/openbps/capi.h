@@ -10,30 +10,25 @@
 extern "C" {
 #endif
 
-// int OPENBPS_E_UNASSIGNED {-1};
-// int OPENBPS_E_ALLOCATE {-2};
-// int OPENBPS_E_OUT_OF_BOUNDS {-3};
-// int OPENBPS_E_INVALID_SIZE {-4};
-// int OPENBPS_E_INVALID_ARGUMENT {-5};
-// int OPENBPS_E_INVALID_TYPE {-6};
-// int OPENBPS_E_INVALID_ID {-7};
-// int OPENBPS_E_GEOMETRY {-8};
-// int OPENBPS_E_DATA {-9};
-// int OPENBPS_E_PHYSICS {-10};
-// int OPENBPS_E_WARNING {1};
-
-
-//materials
-    int openbps_material_add_nuclide(int32_t index, const char* extname, double real, double dev);
-    int openbps_material_delete_nuclide(int32_t index, const char* extname);
-    int openbps_material_matchcompositions();
-    int openbps_read_materials_from_inp(char* inp_path);
-    int openbps_form_materials_xml(char* inp_path);
-    int openbps_material_delete_by_idx(int32_t index);
-    int openbps_material_set_params_by_idx(int32_t index, char* name, double volume,
-      double power, double mass);
-    int openbps_material_delete_by_idx(int32_t index);
-                                        
+// materials
+int openbps_material_add_nuclide(int32_t index, const char *extname,
+                                 double real, double dev);
+int openbps_material_delete_nuclide(int32_t index, const char *extname);
+int openbps_material_matchcompositions();
+int openbps_read_materials_from_inp(char *inp_path);
+int openbps_form_materials_xml(char *inp_path);
+int openbps_material_delete_by_idx(int32_t index);
+int openbps_material_set_params_by_idx(int32_t index, char *name, double volume,
+                                       double power, double mass);
+int openbps_material_add(char* name, double volume, double power, double mass);
+int openbps_materials_get_size(size_t *s);
+int openbps_material_get_params_by_idx(int32_t index, char **name, double *mass,
+                                       double *volume, double *power);
+int openbps_material_set_nuclides_conc(int32_t index, char* name,double realconc,double devconc);
+int openbps_material_get_idx_nuclides_by_idx(int32_t index, int** index_nuclides,int* pSize);
+int openbps_material_get_conc_by_idx(int32_t index, double** real, double** dev,int* pSize);
+int openbps_material_get_nuclides_by_idx(int32_t index, char*** nuclides,
+                                         int* pSize);
 
 //reactions
     int openbps_composition_get_reaction (int32_t index);
@@ -78,7 +73,9 @@ extern "C" {
     int openbps_chain_nuclides_get_hl_by_index (int32_t index, double* real, double* dev);
     int openbps_chain_nuclides_set_decay_eng_by_index (int32_t index, double real, double dev);
     int openbps_chain_nuclides_get_decay_eng_by_index (int32_t index, double* real, double* dev);
-
+    int openbps_init(int argc, char* argv[]);
+    int openbps_run();
+    int openbps_finalize();
 
     extern int OPENBPS_E_UNASSIGNED;
     extern int OPENBPS_E_ALLOCATE;
