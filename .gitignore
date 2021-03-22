@@ -11,6 +11,9 @@ cmake-build-debug/ibrae2
 *.ods#
 
 # Source build
+#
+__pycache__
+./api/__pycache__
 build
 temp
 CMakeFiles
