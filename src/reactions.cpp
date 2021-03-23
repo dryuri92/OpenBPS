@@ -477,7 +477,7 @@ extern "C" int openbps_get_compsition_size(size_t* size) {
     } catch (const std::runtime_error& e) {
         return OPENBPS_E_DATA;
     }
-    
+
     return err;
 }
 
@@ -529,7 +529,9 @@ extern "C" int openbps_get_composition_data(int32_t index, char** name,
     int err = 0;
     if (index >= 0 && index < openbps::compositions.size()) {
         try {
-            std::strcpy(*name, openbps::compositions[index]->Name().c_str());
+            std::cout << "I'm here!" << std::endl;
+            //strcpy(*name, openbps::compositions[index]->Name().c_str());
+            *name = const_cast<char*>(openbps::compositions[index]->Name().c_str());
             *nuclide_n = openbps::compositions[index]->NuclidNumber();
             *energy_n = openbps::compositions[index]->EnergyNumber();
         } catch (const std::runtime_error& e) {
@@ -552,12 +554,10 @@ extern "C" int openbps_composition_get_all_keys_energy(int32_t index, int** res,
             if (*pSize != len) {
                 if (*pSize == 0) {
                     *pSize = len;
-                    *s_real = (double*)malloc(*pSize);
-					*s_dev = (double*)malloc(*pSize);
+                    *res = (int*)malloc(*pSize);
                 } else {
                     *pSize = len;
-                    *s_real = (double*)malloc(*pSize);
-					*s_dev = (double*)malloc(*pSize);
+                    *res = (int*)malloc(*pSize);
                 }
             }
             for (size_t i = 0; i < keys.size(); i++)
@@ -656,12 +656,14 @@ extern "C" int openbps_get_xslib_elem_by_index(
     int err = 0;
     if (index >= 0 && index < openbps::compositions.size()) {
         try {
-            std::strcpy(
-                *name,
-                openbps::compositions[index]->xslib[xlib_idx].xsname.c_str());
-            std::strcpy(
-                *type,
-                openbps::compositions[index]->xslib[xlib_idx].xstype.c_str());
+            //strcpy(
+            //    *name,
+            //    openbps::compositions[index]->xslib[xlib_idx].xsname.c_str());
+            *name = const_cast<char*>(openbps::compositions[index]->xslib[xlib_idx].xsname.c_str());
+            //strcpy(
+            //    *type,
+            //    openbps::compositions[index]->xslib[xlib_idx].xstype.c_str());
+            *type = const_cast<char*>(openbps::compositions[index]->xslib[xlib_idx].xstype.c_str());
             size_t i = 0;
 			if (openbps::compositions[index]->xslib[xlib_idx].xstype == "cs") {
 				for (auto& el : openbps::compositions[index]->xslib[xlib_idx].xs_) {
@@ -676,7 +678,7 @@ extern "C" int openbps_get_xslib_elem_by_index(
 					i++;
                 }
 			}
-           
+
         } catch (const std::runtime_error& e) {
             return OPENBPS_E_DATA;
         }
@@ -748,25 +750,6 @@ extern "C" int openbps_composition_delete_energy(int32_t index, size_t key, doub
     }
     return err;
 }
-
-extern "C" int openbps_composition_get_all_keys_energy(int32_t index, size_t** res) {
-    int err = 0;
-    if (index >= 0 && index < openbps::compositions.size()) {
-        try {
-            auto keys = openbps::compositions[index]->get_all_keys();
-            for (size_t i = 0; i < keys.size(); i++)
-                *res[i] = keys[i];
-        } catch (const std::runtime_error& e) {
-            return OPENBPS_E_DATA;
-        }
-    } else {
-        //    set_errmsg("Index in composition array is out of bounds.");
-        return OPENBPS_E_OUT_OF_BOUNDS;
-    }
-    return err;
-}
-
-
 
 extern "C" int openbps_composition_get_flux(int32_t index, double** f_real, double** f_dev) {
     int err = 0;
