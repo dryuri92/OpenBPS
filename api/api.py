@@ -67,7 +67,43 @@ LIB.openbps_material_get_nuclides_by_idx.restype = c_int
 LIB.openbps_material_get_nuclides_by_idx.argtypes=[c_int,
                                                   POINTER(POINTER(c_char_p)),
                                                   POINTER(c_int)]
+#REACTIONS
+LIB.openbps_get_compsition_size.restype = c_int
+LIB.openbps_get_compsition_size.argtypes=[POINTER(c_int)]
+LIB.openbps_get_xslibs_size_by_index.restype = c_int
+LIB.openbps_get_xslibs_size_by_index.argtypes=[c_int, POINTER(c_int)]
+LIB.openbps_add_composition.restype = c_int
+LIB.openbps_add_composition.argtypes=[c_char_p, c_int, c_int]
 
+LIB.openbps_delete_composition_by_idx.restype = c_int
+LIB.openbps_delete_composition_by_idx.argtypes=[c_int]
+LIB.openbps_get_composition_data.restype = c_int
+LIB.openbps_get_composition_data.argtypes=[c_int, POINTER(c_char_p),
+                                           POINTER(c_int), POINTER(c_int)]
+LIB.openbps_composition_get_all_keys_energy.restype = c_int
+LIB.openbps_composition_get_all_keys_energy.argtypes=[c_int, POINTER(POINTER(c_int)), POINTER(c_int)]
+LIB.openbps_composition_get_energy_by_key.restype = c_int
+LIB.openbps_composition_get_energy_by_key.argtypes=[c_int, c_int, POINTER(POINTER(c_double)]
+LIB.openbps_composition_set_energy.restype = c_int
+LIB.openbps_composition_set_energy.argtypes=[c_int, c_int, POINTER(c_double), c_int]
+LIB.openbps_composition_get_spectrum.restype = c_int
+LIB.openbps_composition_get_spectrum.argtypes=[c_int, POINTER(POINTER(c_double)),
+                                               POINTER(POINTER(c_double)),POINTER(c_int)]
+LIB.openbps_composition_add_to_spectrum.restype = c_int
+LIB.openbps_composition_add_to_spectrum.argtypes=[c_int, c_double, c_double]
+LIB.openbps_get_xslib_elem_by_index.restype = c_int
+LIB.openbps_get_xslib_elem_by_index.argtypes=[c_int, c_int, POINTER(c_char_p),
+                                              POINTER(c_char_p), POINTER(POINTER(c_double)),
+                                              POINTER(POINTER(c_double)), POINTER(POINTER(c_double)),
+                                              POINTER(POINTER(c_double)), POINTER(c_int),
+                                              POINTER(c_int)]
+
+LIB.openbps_add_xslib_elem.restype = c_int
+LIB.openbps_add_xslib_elem.argtypes=[c_int, c_char_p, c_char_p,
+                                     POINTER(c_double), POINTER(c_double),
+                                     c_int, POINTER(c_double), POINTER(c_double),
+                                     c_int]
+                                      
 def finalize():
     """Finalize simulation and free memory"""
     LIB.openbps_finalize()
@@ -109,6 +145,199 @@ class _FortranObjectWithID(_FortranObject):
         # assigned. If the array index of the object is out of bounds, an
         # OutOfBoundsError will be raised here by virtue of referencing self.id
         self.id
+        
+class OpenBPSSxs:
+
+    def __init__(self, index=-1,
+                  name=None, xtype=None):
+        self._initialize()
+        if (index > -1):
+            self._index = c_int(index)
+            self._read_material()
+        else:
+            self._index = index
+            self._name = name
+            self._xtype = xtype
+        
+    def _initialize(self):
+        self._index = -1
+        self._name = None
+        self._xtype = None
+        self._lenrx = c_int(0)
+        self._lencs  = c_int(0)
+        self._csr = POINTER(c_double)()
+        self._csd = POINTER(c_double)()
+        self._rxr = POINTER(c_double)()
+        self._rxd = POINTER(c_double)()
+        
+    def create_cross_section_mode(self, xname, real, dev):
+        self._xtype = "rx"
+        self._xname = xname
+        real = np.asarray(real)
+        dev = np.asarray(dev)
+        self._rxr = real.ctypes.data_as(POINTER(c_double))
+        self._rxd = real.ctypes.data_as(POINTER(c_double))
+        
+    def create_reactions_mode(self, xname, real, dev):
+        self._xtype = "cs"
+        self._xname = xname
+        real = np.asarray(real)
+        dev = np.asarray(dev)
+        self._cdr = real.ctypes.data_as(POINTER(c_double))
+        self._csd = real.ctypes.data_as(POINTER(c_double))
+
+    def get_by_composition(self, number):
+        name = c_char_p()
+        xtype = c_char_p()
+        
+        LIB.openbps_get_xslib_elem_by_index(c_int(number), self._index,
+                                            name, xtype,
+                                            self._rxr, self._rxd,
+                                            self._csr, self._csd,
+                                            self._lenrx, self._lencs)
+        
+        self._name = name.value.decode()
+        self._xtype = xtype.value.decode()
+        
+    def add_from_composition(self, number):
+        name_ptr = c_char_p(self._name.encode())
+        xtype_ptr = c_char_p(self._xtype.encode())
+        
+        LIB.openbps_add_xslib_elem(c_int(number), 
+                                   name_ptr, xtype_ptr,
+                                   self._rxr, self._rxd,
+                                   self._lenrx,
+                                   self._csr, self._csd,
+                                   self._lencs)
+    @staticmethod
+    def get_size_by_composition(number):
+        n = c_int()
+        LIB.openbps_get_xslibs_size_by_index(c_int(number), n)
+        return n.value
+        
+    @property
+    def rx(self):
+        return [(self._rxr[n], self._rxd[n])
+                for n in range(self._lenrx.value)]
+    @property
+    def cs(self):
+        return [(self._csr[n], self._csd[n])
+                for n in range(self._lencs.value)]
+    @property
+    def name(self):
+        return self._name
+    
+    @property
+    def xtype(self):
+        return self._xtype
+        
+class OpenBPSComposition:
+
+    def __init__(self, index=-1, name=None
+                  numNuclid=None, numEnergy=None):
+        self._initialize()
+        if (index > -1):
+            self._index = c_int(index)
+            self._read_composition()
+        else:
+            self._name = name
+            self._index = index
+            self._numNuclid = numNuclid
+            self._numEnergy = numEnergy
+        
+    def _initialize(self):
+        self._index = -1
+        self._name = None
+        self._numNuclid = None
+        self._numEnergy = None
+        self._lenenergymap = c_int(0)
+        self._lenspectrum  = c_int(0)
+        self._energies = {}
+        self._energykeys = POINTER(c_int)()
+        self._spectrumr = POINTER(c_double)()
+        self._spectrumd = POINTER(c_double)()
+        self._Sxs = []
+    def _read_composition(self):
+        name = c_char_p()
+        numNuclid = c_int()
+        numEnergy = c_int()
+        LIB.openbps_get_composition_data(self._index, name,
+                                         numNuclid, numEnergy)
+        self._name = name.value.decode()
+        self._numNuclid = numNuclid.value
+        self._numEnergy = numEnergy.value
+        
+    @staticmethod
+    def get_size_composition():
+        n = c_int()
+        LIB.openbps_get_compsition_size(n)
+        return n.value
+        
+    @staticmethod
+    def add_composition(name, numNuclid, numEnergy):
+        name_ptr = c_char_p(name.encode())
+        numNuclid = c_int(numNuclid)
+        numEnergy = c_int(numEnergy)
+        LIB.openbps_add_composition(name_ptr, numNuclid, numEnergy)
+        
+    def del_composition(self):
+        
+        LIB.openbps_delete_composition_by_idx(self._index)
+        
+    def _get_energy_keys(self):
+        # Allocate memory for arguments that are written to
+        LIB.openbps_material_get_idx_nuclides_by_idx(self._index,
+                                                     self._energykeys,
+                                                     self._lenenergymap)
+    def _get_energies(self, key):
+        energies = POINTER(c_double)()
+        LIB.openbps_composition_get_energy_by_key(self._index,
+                                                  c_int(key),
+                                                  energies)
+        return energies
+        
+    def _get_spectrum(self):
+        LIB.openbps_composition_get_spectrum(self._index, self._spectrumr,
+                                             self._spectrumd,
+                                             self._lenspectrum)
+        
+    def write_energies(self, energies):
+        key = c_int(len(energies))
+        energies = POINTER(c_double)()
+        # Get numpy array as a double*
+        e = np.asarray(energies)
+        ep = e.ctypes.data_as(POINTER(c_double))
+        LIB.openbps_composition_set_energy(self._index,
+                                           key, ep, key)
+    def write_spectrum(self, spectrumr, spectrumd):
+        for sr, sd in zip(spectrumr, spectrumd):
+            LIB.openbps_composition_add_to_spectrum(self._index,
+                                                    c_double(sr), c_double(0.0))
+    
+    def getSxs(self):
+        num = OpenBPSSxs.get_size_by_composition(self._index)
+        for n in range(num):
+            _sxs = OpenBPSSxs(n)
+            _sxs.get_by_composition(self._index)
+            self._Sxs.append(_sxs)
+            
+    def writeSxs(self, xname, xtype, real, dev):
+        _sxs = OpenBPSSxs(-1, xname, xtype)
+        if (xtype == "rx"):
+            _sxs.create_reactions_mode(xsname, real, dev)
+            _sxs.add_from_composition(self._index)
+        else:
+            _sxs.create_cross_section_mode(xsname, real, dev)
+            _sxs.add_from_composition(self._index)
+        self._Sxs.append(_sxs)
+    @property
+    def energies(self):
+        return [(self._csr[n], self._csd[n])
+                for n in range(self._lencs.value)]
+    @property
+    def name(self):
+        return self._name
+                    
 
 class OpenBPSMaterial:
 
@@ -442,10 +671,3 @@ class Material(_FortranObjectWithID):
         dp = d.ctypes.data_as(POINTER(c_double))
 
         _dll.openmc_material_set_densities(self._index, len(nuclides), nucs, dp)
-
-import sys
-sys.path.append("./api")
-from api import *
-#init()
-#material = OpenBPSMaterial(index=0)
-#material.get_nuclides()

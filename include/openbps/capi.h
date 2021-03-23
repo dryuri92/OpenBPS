@@ -30,52 +30,93 @@ int openbps_material_get_conc_by_idx(int32_t index, double** real, double** dev,
 int openbps_material_get_nuclides_by_idx(int32_t index, char*** nuclides,
                                          int* pSize);
 
-//reactions
-    int openbps_composition_get_reaction (int32_t index);
-    int openbps_composition_get_fluxenergy (int32_t index, double** first, double** second);
-    int openbps_composition_deploy_all (int32_t compos_idx, int32_t extern_compos_idx);
-    int openbps_material_read_importedlib_xml();
-    int openbps_material_read_reactions_xml();
-    int openbps_composition_deploy_all (int32_t compos_idx, int32_t extern_compos_idx);
-    int openbps_composition_import_xsdata (int32_t compos_idx, int32_t implibps_idx);
-//filter
-    int openbps_filter_apply (int32_t index, const char** input, size_t input_size, int** indices);
-    int openbps_material_filter_apply (const char* mat_name, bool* is_valid);
-    int openbps_time_filter_apply (double dt, int numstep, int** indices);
-    int openbps_material_filter_get_bins (char*** out);
-    int openbps_material_filter_add_bin(char* bin);
-    int openbps_material_filter_delete_bin(char* bin);
-    int openbps_filters_get_bins_by_idx(int32_t index, char*** out);
-    int openbps_filters_add_bin_by_idx (int32_t index, char* bin);
-    int openbps_filters_delete_bin_by_idx(int32_t index, char* bin);
-    int openbps_time_filter_get_bins (double** out);
-    int openbps_time_filter_add_bin (double bin);
-    int openbps_time_filter_delete_bin(double bin);
+// reactions
+int openbps_composition_get_reaction(int32_t index);
+int openbps_composition_get_fluxenergy(int32_t index, double **first,
+                                       double **second);
+int openbps_composition_deploy_all(int32_t compos_idx,
+                                   int32_t extern_compos_idx);
+int openbps_material_read_importedlib_xml();
+int openbps_material_read_reactions_xml();
+int openbps_composition_deploy_all(int32_t compos_idx,
+                                   int32_t extern_compos_idx);
+int openbps_composition_import_xsdata(int32_t compos_idx, int32_t implibps_idx);
 
-//nuclides
-    int openbps_get_nuclidearray_index (const char* name);
-    int openbps_read_nuclide_xml (const char* filepath);
-    int openbps_chain_nuclides_add(char* name, int Z, int A, int M, double awr);
-    int openbps_set_nuclide_name_idx (const char* name, size_t idx);
-    int openbps_get_nuclide_index (const char* name, size_t* idx);
-    int openbps_delet_nuclide_by_name (const char* name);
-    int openbps_chain_nuclides_get_name_by_index (int32_t index, char** name);
-    int openbps_chain_nuclides_set_name_by_index (int32_t index, char* name);
-    int openbps_chain_nuclides_get_Z_by_index (int32_t index, int* Z);
-    int openbps_chain_nuclides_set_Z_by_index (int32_t index, int Z);
-    int openbps_chain_nuclides_get_A_by_index (int32_t index, int* A);
-    int openbps_chain_nuclides_set_A_by_index (int32_t index, int A);
-    int openbps_chain_nuclides_get_m_by_index (int32_t index, int* m);
-    int openbps_chain_nuclides_set_m_by_index (int32_t index, int m);
-    int openbps_chain_nuclides_set_awr_by_index (int32_t index, double awr);
-    int openbps_chain_nuclides_get_awr_by_index (int32_t index, double* awr);
-    int openbps_chain_nuclides_add_set_hl_by_index (int32_t index, double real, double dev);
-    int openbps_chain_nuclides_get_hl_by_index (int32_t index, double* real, double* dev);
-    int openbps_chain_nuclides_set_decay_eng_by_index (int32_t index, double real, double dev);
-    int openbps_chain_nuclides_get_decay_eng_by_index (int32_t index, double* real, double* dev);
-    int openbps_init(int argc, char* argv[]);
-    int openbps_run();
-    int openbps_finalize();
+// modify sxs vector in compositions
+int openbps_get_xslibs_size_by_index(int32_t index, size_t *size);
+int openbps_add_xslib_elem(int32_t index, char *name, char *type,
+                           double *real_rxs, double *dev_rxs, int32_t rxs_size,
+                           double *real_xs, double *dev_xs, int32_t xs_size);
+int openbps_get_xslib_elem_by_index(int32_t index, size_t xlib_idx,
+                                    char** name, char** type,
+									double** real_rxs, double** dev_rxs,
+									double** real_xs, double** dev_xs,
+									int* rxs_size, int* xs_size);
+int openbps_delete_xslib_elem(int32_t index, size_t xlib_idx);
+
+//compositions
+int openbps_get_compsition_size(size_t* size);
+int openbps_get_composition_data(int32_t index, char **name, size_t *nuclide_n,
+                                 size_t *energy_n);
+int openbps_add_composition(char *name, size_t nuclide_n, size_t energy_n);
+int openbps_delete_composition_by_idx(int32_t index);
+int openbps_composition_get_energy_by_key(int32_t index, size_t key,
+                                          double **res);
+int openbps_composition_set_energy(int32_t index, size_t key, double *en,
+                                   size_t en_size);
+int openbps_composition_delete_energy(int32_t index, size_t key, double *en,
+                                      size_t en_size);
+int openbps_composition_get_all_keys_energy(int32_t index, int** res, int* pSize);
+
+//flux&spectrum
+
+int openbps_composition_get_spectrum(int32_t index, double** s_real, double** s_dev, int* pSize);
+int openbps_composition_get_flux(int32_t index, double** f_real, double** f_dev);
+int openbps_composition_add_to_spectrum(int32_t index, double s_real, double s_dev);
+int openbps_composition_add_to_flux(int32_t index, double f_real, double f_dev);
+int openbps_composition_delete_from_spectrum(int32_t index, size_t pos);
+int openbps_composition_delete_from_flux(int32_t index, size_t pos);
+
+// filter
+int openbps_filter_apply(int32_t index, const char **input, size_t input_size,
+                         int **indices);
+int openbps_material_filter_apply(const char *mat_name, bool *is_valid);
+int openbps_time_filter_apply(double dt, int numstep, int **indices);
+int openbps_material_filter_get_bins(char ***out);
+int openbps_material_filter_add_bin(char *bin);
+int openbps_material_filter_delete_bin(char *bin);
+int openbps_filters_get_bins_by_idx(int32_t index, char ***out);
+int openbps_filters_add_bin_by_idx(int32_t index, char *bin);
+int openbps_filters_delete_bin_by_idx(int32_t index, char *bin);
+int openbps_time_filter_get_bins(double **out);
+int openbps_time_filter_add_bin(double bin);
+int openbps_time_filter_delete_bin(double bin);
+
+// nuclides
+int openbps_get_nuclidearray_index(const char *name);
+int openbps_read_nuclide_xml(const char *filepath);
+int openbps_chain_nuclides_add(char *name, int Z, int A, int M, double awr);
+int openbps_set_nuclide_name_idx(const char *name, size_t idx);
+int openbps_get_nuclide_index(const char *name, size_t *idx);
+int openbps_delete_nuclide_by_name(const char *name);
+int openbps_chain_nuclides_get_name_by_index(int32_t index, char **name);
+int openbps_chain_nuclides_set_name_by_index(int32_t index, char *name);
+int openbps_chain_nuclides_get_Z_by_index(int32_t index, int *Z);
+int openbps_chain_nuclides_set_Z_by_index(int32_t index, int Z);
+int openbps_chain_nuclides_get_A_by_index(int32_t index, int *A);
+int openbps_chain_nuclides_set_A_by_index(int32_t index, int A);
+int openbps_chain_nuclides_get_m_by_index(int32_t index, int *m);
+int openbps_chain_nuclides_set_m_by_index(int32_t index, int m);
+int openbps_chain_nuclides_set_awr_by_index(int32_t index, double awr);
+int openbps_chain_nuclides_get_awr_by_index(int32_t index, double *awr);
+int openbps_chain_nuclides_add_set_hl_by_index(int32_t index, double real,
+                                               double dev);
+int openbps_chain_nuclides_get_hl_by_index(int32_t index, double *real,
+                                           double *dev);
+int openbps_chain_nuclides_set_decay_eng_by_index(int32_t index, double real,
+                                                  double dev);
+int openbps_chain_nuclides_get_decay_eng_by_index(int32_t index, double *real,
+                                                  double *dev);
 
     extern int OPENBPS_E_UNASSIGNED;
     extern int OPENBPS_E_ALLOCATE;
