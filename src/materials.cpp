@@ -316,10 +316,10 @@ extern "C" int openbps_material_get_nuclides_by_idx(int32_t index,
             if (*pSize != len) {
                 if (*pSize == 0) {
                     *pSize = len;
-                    *nuclides = (char**)malloc(*pSize);
+                    *nuclides = (char**)malloc(*pSize * sizeof(char*));
                 } else {
                     *pSize = len;
-                    *nuclides = (char**)realloc(*nuclides, *pSize);
+                    *nuclides = (char**)realloc(*nuclides, *pSize * sizeof(char*));
                 }
             }
             for (auto& el : openbps::materials[index]->namenuclides) {
@@ -348,12 +348,12 @@ extern "C" int openbps_material_get_conc_by_idx(int32_t index, double** real,
             if (*pSize != len) {
                 if (*pSize == 0) {
                     *pSize = len;
-                    *real = (double*)malloc(*pSize);
-                    *dev = (double*)malloc(*pSize);
+                    *real = (double*)malloc(*pSize * sizeof(double));
+                    *dev = (double*)malloc(*pSize * sizeof(double));
                 } else {
                     *pSize = len;
-                    *real = (double*)realloc(*real, *pSize);
-                    *dev = (double*)realloc(*dev, *pSize);
+                    *real = (double*)realloc(*real, *pSize * sizeof(double));
+                    *dev = (double*)realloc(*dev, *pSize * sizeof(double));
                 }
             }
             for (auto& el : openbps::materials[index]->conc) {
@@ -382,10 +382,10 @@ extern "C" int openbps_material_get_idx_nuclides_by_idx(int32_t index,
             if (*pSize != len) {
                 if (*pSize == 0) {
                     *pSize = len;
-                    *index_nuclides = (int*)malloc(*pSize);
+                    *index_nuclides = (int*)malloc(*pSize * sizeof(int));
                 } else {
                     *pSize = len;
-                    *index_nuclides = (int*)realloc(*index_nuclides, *pSize);
+                    *index_nuclides = (int*)realloc(*index_nuclides, *pSize * sizeof(int));
                 }
             }
             for (int i = 0; i < *pSize; i++) {

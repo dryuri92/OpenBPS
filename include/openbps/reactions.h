@@ -155,7 +155,7 @@ class Composition : public BasicComposition {
         return res;
     }
 
-    std::vector<udouble> get_spectrum() { return spectrum_; }
+    std::vector<udouble>& get_spectrum() { return spectrum_; }
     std::vector<udouble> get_flux() { return flux_; }
     
     void add_to_spectrum(udouble u) { spectrum_.push_back(u); }

@@ -2,9 +2,9 @@
 <configure>
   <chain>./examples/chain_endfb71.xml</chain>
   <nuclides>./examples/nuclides.xml</nuclides>
-  <impxslibs>
+  <!--impxslibs>
     <impxslib>./examples/XMAS172.xml</impxslib>
-  </impxslibs>
+  </impxslibs-->
   <inpmaterials>./examples/U235thn_1sec/materialsi.xml</inpmaterials>
   <reaction>./examples/U235thn_1sec/reactions.xml</reaction>
   <outmaterials>./examples/U235thn_1sec/materialso.xml</outmaterials>

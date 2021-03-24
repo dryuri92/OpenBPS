@@ -43,10 +43,14 @@ int openbps_composition_deploy_all(int32_t compos_idx,
 int openbps_composition_import_xsdata(int32_t compos_idx, int32_t implibps_idx);
 
 // modify sxs vector in compositions
-int openbps_get_xslibs_size_by_index(int32_t index, size_t *size);
+int openbps_get_xslibs_size_by_index(int32_t index, int *size);
 int openbps_add_xslib_elem(int32_t index, char *name, char *type,
                            double *real_rxs, double *dev_rxs, int32_t rxs_size,
                            double *real_xs, double *dev_xs, int32_t xs_size);
+int openbps_update_xslib_elem(int32_t index, char* name, char* type,
+                              double* real_rxs, double* dev_rxs,
+                              int32_t rxs_size, double* real_xs,
+                              double* dev_xs, int32_t xs_size);
 int openbps_get_xslib_elem_by_index(int32_t index, size_t xlib_idx,
                                     char** name, char** type,
 									double** real_rxs, double** dev_rxs,
@@ -55,13 +59,13 @@ int openbps_get_xslib_elem_by_index(int32_t index, size_t xlib_idx,
 int openbps_delete_xslib_elem(int32_t index, size_t xlib_idx);
 
 //compositions
-int openbps_get_compsition_size(size_t* size);
+int openbps_get_compsition_size(int* size);
 int openbps_get_composition_data(int32_t index, char **name, size_t *nuclide_n,
                                  size_t *energy_n);
 int openbps_add_composition(char *name, size_t nuclide_n, size_t energy_n);
 int openbps_delete_composition_by_idx(int32_t index);
 int openbps_composition_get_energy_by_key(int32_t index, size_t key,
-                                          double **res);
+                                          double **res, int* pSize);
 int openbps_composition_set_energy(int32_t index, size_t key, double *en,
                                    size_t en_size);
 int openbps_composition_delete_energy(int32_t index, size_t key, double *en,

@@ -11,6 +11,7 @@
 from ctypes import CDLL, c_bool, c_int
 from ctypes import *
 from numpy.ctypeslib import as_array
+import numpy as np
 import os
 import sys
 
@@ -19,7 +20,7 @@ if sys.platform == 'darwin':
 else:
     _suffix = 'so'
 
-nameoflib = "/mnt/c/virtual/env/OpenBPS/build/lib/liblibopenbps.{}"
+nameoflib = "/home/user/lad/OpenBPS/build/lib/liblibopenbps.{}"
 
 
 
@@ -83,7 +84,7 @@ LIB.openbps_get_composition_data.argtypes=[c_int, POINTER(c_char_p),
 LIB.openbps_composition_get_all_keys_energy.restype = c_int
 LIB.openbps_composition_get_all_keys_energy.argtypes=[c_int, POINTER(POINTER(c_int)), POINTER(c_int)]
 LIB.openbps_composition_get_energy_by_key.restype = c_int
-LIB.openbps_composition_get_energy_by_key.argtypes=[c_int, c_int, POINTER(POINTER(c_double))]
+LIB.openbps_composition_get_energy_by_key.argtypes=[c_int, c_int, POINTER(POINTER(c_double)), POINTER(c_int)]
 LIB.openbps_composition_set_energy.restype = c_int
 LIB.openbps_composition_set_energy.argtypes=[c_int, c_int, POINTER(c_double), c_int]
 LIB.openbps_composition_get_spectrum.restype = c_int
@@ -104,6 +105,11 @@ LIB.openbps_add_xslib_elem.argtypes=[c_int, c_char_p, c_char_p,
                                      c_int, POINTER(c_double), POINTER(c_double),
                                      c_int]
 
+LIB.openbps_update_xslib_elem.restype = c_int
+LIB.openbps_update_xslib_elem.argtypes=[c_int, c_char_p, c_char_p,
+                                     POINTER(c_double), POINTER(c_double),
+                                     c_int, POINTER(c_double), POINTER(c_double),
+                                     c_int]
 def finalize():
     """Finalize simulation and free memory"""
     LIB.openbps_finalize()
@@ -170,26 +176,29 @@ class OpenBPSSxs:
         self._rxr = POINTER(c_double)()
         self._rxd = POINTER(c_double)()
 
-    def create_cross_section_mode(self, xname, real, dev):
-        self._xtype = "rx"
+    def create_cross_section_mode(self, xname, xtype, real, dev):
+        self._xtype = xtype
         self._xname = xname
         real = np.asarray(real)
         dev = np.asarray(dev)
-        self._rxr = real.ctypes.data_as(POINTER(c_double))
-        self._rxd = real.ctypes.data_as(POINTER(c_double))
-
-    def create_reactions_mode(self, xname, real, dev):
-        self._xtype = "cs"
-        self._xname = xname
-        real = np.asarray(real)
-        dev = np.asarray(dev)
+        self._lencs = c_int(len(real))
         self._cdr = real.ctypes.data_as(POINTER(c_double))
-        self._csd = real.ctypes.data_as(POINTER(c_double))
+        self._csd = dev.ctypes.data_as(POINTER(c_double))
+
+    def create_reactions_mode(self, xname, xtype, real, dev):
+        self._xtype = xtype
+        self._xname = xname
+        real = np.asarray(real)
+        dev = np.asarray(dev)
+        print(real, dev)
+        self._lenrx = c_int(len(real))
+        self._rxr = real.ctypes.data_as(POINTER(c_double))
+        self._rxd = dev.ctypes.data_as(POINTER(c_double))
 
     def get_by_composition(self, number):
         name = c_char_p()
         xtype = c_char_p()
-
+        print("Number, index ", number, self._index)
         LIB.openbps_get_xslib_elem_by_index(c_int(number), self._index,
                                             name, xtype,
                                             self._rxr, self._rxd,
@@ -209,6 +218,16 @@ class OpenBPSSxs:
                                    self._lenrx,
                                    self._csr, self._csd,
                                    self._lencs)
+    def update_from_composition(self, number):
+        name_ptr = c_char_p(self._name.encode())
+        xtype_ptr = c_char_p(self._xtype.encode())
+        LIB.openbps_update_xslib_elem(c_int(number),
+                                   name_ptr, xtype_ptr,
+                                   self._rxr, self._rxd,
+                                   self._lenrx,
+                                   self._csr, self._csd,
+                                   self._lencs)
+
     @staticmethod
     def get_size_by_composition(number):
         n = c_int()
@@ -289,21 +308,31 @@ class OpenBPSComposition:
         LIB.openbps_composition_get_all_keys_energy(self._index,
                                                      self._energykeys,
                                                      self._lenenergymap)
-    def _get_energies(self, key):
-        energies = POINTER(c_double)()
+    def _get_energies(self, key, ptr, energies):
         LIB.openbps_composition_get_energy_by_key(self._index,
                                                   c_int(key),
-                                                  energies)
-        return energies
+                                                  energies,
+                                                  ptr)
+        print(energies[0])
 
     def _get_spectrum(self):
-        LIB.openbps_composition_get_spectrum(self._index, self._spectrumr,
+        print(LIB.openbps_composition_get_spectrum(self._index, self._spectrumr,
                                              self._spectrumd,
-                                             self._lenspectrum)
+                                             self._lenspectrum))
+        print('a')
+        print(self._lenspectrum)
+
+    def read_energies(self):
+        self._get_energy_keys()
+        for i in range(self._lenenergymap.value):
+            k = self._energykeys[i]
+            self._energies[k] = (c_int(0), POINTER(c_double)())
+            self._get_energies(k, self._energies[k][0], self._energies[k][1])
+
 
     def write_energies(self, energies):
-        key = c_int(len(energies))
-        energies = POINTER(c_double)()
+        key = c_int(len(energies) - 1)
+        size = c_int(len(energies))
         # Get numpy array as a double*
         e = np.asarray(energies)
         ep = e.ctypes.data_as(POINTER(c_double))
@@ -316,28 +345,53 @@ class OpenBPSComposition:
 
     def getSxs(self):
         num = OpenBPSSxs.get_size_by_composition(self._index)
+        print("Xslib size ", num)
         for n in range(num):
             _sxs = OpenBPSSxs(n)
             _sxs.get_by_composition(self._index)
             self._Sxs.append(_sxs)
 
-    def writeSxs(self, xname, xtype, real, dev):
+    def writeSxs(self, xname, xtype, real, dev, sectype="rx"):
         _sxs = OpenBPSSxs(-1, xname, xtype)
-        if (xtype == "rx"):
-            _sxs.create_reactions_mode(xsname, real, dev)
+        if (sectype == "rx"):
+            _sxs.create_reactions_mode(xname, xtype, real, dev)
             _sxs.add_from_composition(self._index)
         else:
-            _sxs.create_cross_section_mode(xsname, real, dev)
+            _sxs.create_cross_section_mode(xname, xtype, real, dev)
             _sxs.add_from_composition(self._index)
         self._Sxs.append(_sxs)
+
+    def updateSxs(self, xname, xtype, real, dev, sectype="rx"):
+        for _sxs in self._Sxs:
+            if (_sxs.name == xname) and (_sxs.xtype== xtype):
+                if (sectype == "rx"):
+                    _sxs.create_reactions_mode(xname, xtype, real, dev)
+                    _sxs.update_from_composition(self._index)
+                else:
+                    _sxs.create_cross_section_mode(xname, xtype, real, dev)
+                    _sxs.update_from_composition(self._index)
+
     @property
-    def energies(self):
-        return [(self._csr[n], self._csd[n])
-                for n in range(self._lencs.value)]
+    def spectrum(self):
+        return [(self._spectrumr[n], self._spectrumd[n])
+                for n in range(self._lenspectrum.value)]
     @property
     def name(self):
         return self._name
+    @property
+    def energies(self):
+        return self._energies
 
+    @property
+    def Sxs(self):
+        return self._Sxs
+
+    @property
+    def numNuclide(self):
+        return self._numNuclid
+    @property
+    def numEnergy(self):
+        return self._numEnergy
 
 class OpenBPSMaterial:
 

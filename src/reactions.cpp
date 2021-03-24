@@ -1,7 +1,7 @@
 #include "openbps/reactions.h"
 
 #include <string.h>
-
+#include <stdlib.h>
 #include <iostream>
 #include <list>
 #include <map>
@@ -13,6 +13,7 @@
 #include "openbps/configure.h"
 #include "openbps/functionals.h"
 #include "openbps/parse.h"
+#include "openbps/uncertainty.h"
 
 namespace openbps {
 
@@ -111,6 +112,7 @@ Composition::Composition(pugi::xml_node node) {
 Sxs parse_xs_xml_(pugi::xml_node node, const std::string& rxs,
                   const std::string& redex) {
     Sxs result(node, rxs, redex);
+	std::cout << "Push back called "<< node << rxs << redex << std::endl;
     return result;
 }
 
@@ -119,6 +121,7 @@ void parse_xml_xslibs_(pugi::xml_node node, std::vector<Sxs>& xssource) {
     std::string rxs{node.child("xslibs").attribute("typex").value()};
     for (pugi::xml_node tool : node.child("xslibs").children("xslib")) {
         xssource.push_back(parse_xs_xml_(tool, rxs, "xslib"));
+		
     }
     for (pugi::xml_node tool : node.child("xslibs").children("dxslib")) {
         // Read deviation part of cross section
@@ -251,6 +254,7 @@ void read_reactions_xml() {
     using namespace configure;
     pugi::xml_document doc;
     auto result = doc.load_file(reaction_file.c_str());
+	std::cout << "Reaction file is " << reaction_file << std::endl; 
     if (!result) {
         std::cout << "Warning: file reactions.xml not found!" << std::endl;
         // If reactions.xml not found run in decay only mode
@@ -278,6 +282,7 @@ void read_reactions_xml() {
         if (i != indexall) {
             if (indexall > -1)
                 compositions[i]->deploy_all(*compositions[indexall]);
+			std::cout << "Reading reactions" << std::endl;
             compositions[i]->get_reaction();
             if (externxslibs.size() > 0)
                 for (auto& v : externxslibs) compositions[i]->import_xsdata(v);
@@ -470,7 +475,7 @@ extern "C" int openbps_addto_egroups_by_index(int32_t index, double d) {
 // }
 
 //+
-extern "C" int openbps_get_compsition_size(size_t* size) {
+extern "C" int openbps_get_compsition_size(int* size) {
     int err = 0;
     try {
         *size = openbps::compositions.size();
@@ -481,10 +486,11 @@ extern "C" int openbps_get_compsition_size(size_t* size) {
     return err;
 }
 
-extern "C" int openbps_get_xslibs_size_by_index(int32_t index, size_t* size) {
+extern "C" int openbps_get_xslibs_size_by_index(int32_t index, int* size) {
     int err = 0;
     if (index >= 0 && index < openbps::compositions.size()) {
         try {
+			std::cout<<"Index "<<index << " Size of xslibs "<< openbps::compositions[index]->xslib.size() << std :: endl;
             *size = openbps::compositions[index]->xslib.size();
         } catch (const std::runtime_error& e) {
             return OPENBPS_E_DATA;
@@ -530,7 +536,6 @@ extern "C" int openbps_get_composition_data(int32_t index, char** name,
     if (index >= 0 && index < openbps::compositions.size()) {
         try {
             std::cout << "I'm here!" << std::endl;
-            //strcpy(*name, openbps::compositions[index]->Name().c_str());
             *name = const_cast<char*>(openbps::compositions[index]->Name().c_str());
             *nuclide_n = openbps::compositions[index]->NuclidNumber();
             *energy_n = openbps::compositions[index]->EnergyNumber();
@@ -554,10 +559,10 @@ extern "C" int openbps_composition_get_all_keys_energy(int32_t index, int** res,
             if (*pSize != len) {
                 if (*pSize == 0) {
                     *pSize = len;
-                    *res = (int*)malloc(*pSize);
+                    *res = (int*)malloc(*pSize * sizeof(int));
                 } else {
                     *pSize = len;
-                    *res = (int*)malloc(*pSize);
+                    *res = (int*)malloc(*pSize * sizeof(int));
                 }
             }
             for (size_t i = 0; i < keys.size(); i++)
@@ -572,11 +577,28 @@ extern "C" int openbps_composition_get_all_keys_energy(int32_t index, int** res,
     return err;
 }
 
-extern "C" int openbps_composition_get_energy_by_key(int32_t index, size_t key, double** res) {
+extern "C" int openbps_composition_get_energy_by_key(int32_t index, size_t key, double** res, int* pSize) {
     int err = 0;
     if (index >= 0 && index < openbps::compositions.size()) {
         try {
-            *res = openbps::compositions[index]->get_energy(key).data();
+            auto vec = openbps::compositions[index]->get_energy(key);
+			int len = vec.size();
+			std::cout << "Energy len "<< len << std::endl;
+            if (*pSize != len) {
+                if (*pSize == 0) {
+                    *pSize = len;
+                    *res = (double*)malloc(*pSize * sizeof(double));
+                } else {
+                    *pSize = len;
+                    *res = (double*)realloc(*res, *pSize * sizeof(double));
+                }
+            }
+			for (int i = 0; i < *pSize; i++) {
+                (*res)[i] = vec[i];
+				std::cout << "Res energy "<< vec[i] << std::endl;
+            }
+			
+			std::cout << "Energy 0 "<< openbps::compositions[index]->get_energy(key)[0]<< std::endl;
         } catch (const std::runtime_error& e) {
             return OPENBPS_E_DATA;
         }
@@ -607,22 +629,25 @@ extern "C" int openbps_composition_get_spectrum(int32_t index, double** s_real, 
     int err = 0;
     if (index >= 0 && index < openbps::compositions.size()) {
         try {
-            auto sp = openbps::compositions[index]->get_spectrum();
-			int len = sp.size();
+            std::vector<openbps::udouble>& sp = openbps::compositions[index]->get_spectrum();
+			std::cout << "Spectrum size" << sp.size() << std :: endl;
+			unsigned long len = sp.size();
             if (*pSize != len) {
                 if (*pSize == 0) {
                     *pSize = len;
-                    *s_real = (double*)malloc(*pSize);
-					*s_dev = (double*)malloc(*pSize);
+                    *s_real = (double*)malloc(len * sizeof(double));
+					*s_dev = (double*)malloc(len * sizeof(double));
                 } else {
                     *pSize = len;
-                    *s_real = (double*)malloc(*pSize);
-					*s_dev = (double*)malloc(*pSize);
+                    *s_real = (double*)realloc(*s_real,len * sizeof(double));
+					*s_dev = (double*)realloc(*s_dev, len * sizeof(double));
                 }
             }
-            for (size_t i = 0; i < sp.size(); i++){
-               (*s_real)[i] = sp[i].Real();
-               (*s_dev)[i] = sp[i].Dev();
+			size_t i = 0;
+			for (auto& el : sp) {
+                (*s_real)[i] = el.Real();
+                (*s_dev)[i] = el.Dev();
+			    i++;
             }
         } catch (const std::runtime_error& e) {
             return OPENBPS_E_DATA;
@@ -638,6 +663,7 @@ extern "C" int openbps_composition_add_to_spectrum(int32_t index, double s_real,
     int err = 0;
     if (index >= 0 && index < openbps::compositions.size()) {
         try {
+			std::cout << "add spectrum " << s_real << " " << s_dev << std :: endl;
             openbps::compositions[index]->add_to_spectrum(openbps::udouble(s_real, s_dev));
         } catch (const std::runtime_error& e) {
             return OPENBPS_E_DATA;
@@ -656,29 +682,48 @@ extern "C" int openbps_get_xslib_elem_by_index(
     int err = 0;
     if (index >= 0 && index < openbps::compositions.size()) {
         try {
-            //strcpy(
-            //    *name,
-            //    openbps::compositions[index]->xslib[xlib_idx].xsname.c_str());
             *name = const_cast<char*>(openbps::compositions[index]->xslib[xlib_idx].xsname.c_str());
-            //strcpy(
-            //    *type,
-            //    openbps::compositions[index]->xslib[xlib_idx].xstype.c_str());
             *type = const_cast<char*>(openbps::compositions[index]->xslib[xlib_idx].xstype.c_str());
             size_t i = 0;
-			if (openbps::compositions[index]->xslib[xlib_idx].xstype == "cs") {
+				unsigned long len1 = openbps::compositions[index]->xslib[xlib_idx].xs_.size();
+				std::cout << "LENGTH 1 = " << len1 << std::endl;
+                if (*xs_size != len1) {
+                    if (*xs_size == 0) {
+                        *xs_size = len1;
+                        *real_xs = (double*)malloc(len1 * sizeof(double));
+					    *dev_xs = (double*)malloc(len1 * sizeof(double));
+                    } else {
+                        *xs_size = len1;
+                        *real_xs = (double*)realloc(*real_xs,len1 * sizeof(double));
+					    *dev_xs = (double*)realloc(*dev_xs, len1 * sizeof(double));
+                    }   
+                }
 				for (auto& el : openbps::compositions[index]->xslib[xlib_idx].xs_) {
                     (*real_xs)[i] = el.Real();
                     (*dev_xs)[i] = el.Dev();
 					i++;
                 }
-			} else {
+				i = 0;
+				std::cout << "INDEXES = " << index << " "<< xlib_idx<< " sizes " <<*rxs_size<< std::endl;
+				unsigned long len2 = openbps::compositions[index]->xslib[xlib_idx].rxs.size();
+				std::cout << "LENGTH 2 = " << len2 << std::endl;
+                if (*rxs_size != len2) {
+                    if (*rxs_size == 0) {
+                        *rxs_size = len2;
+                        *real_rxs = (double*)malloc(len2 * sizeof(double));
+					    *dev_rxs = (double*)malloc(len2 * sizeof(double));
+                    } else {
+                        *rxs_size = len2;
+                        *real_rxs = (double*)realloc(*real_rxs,len2 * sizeof(double));
+					    *dev_rxs = (double*)realloc(*dev_rxs, len2 * sizeof(double));
+                    }   
+                }
 				for (auto& el : openbps::compositions[index]->xslib[xlib_idx].rxs) {
                     (*real_rxs)[i] = el.Real();
                     (*dev_rxs)[i] = el.Dev();
 					i++;
                 }
-			}
-
+			
         } catch (const std::runtime_error& e) {
             return OPENBPS_E_DATA;
         }
@@ -700,21 +745,56 @@ extern "C" int openbps_add_xslib_elem(int32_t index, char* name, char* type,
             openbps::Sxs sxs;
             sxs.xsname = {name};
             sxs.xstype = {type};
-			if (sxs.xstype == "cs") {
+			std::cout << "xs size " << xs_size <<" "<< rxs_size<< std::endl;
 				for (size_t i = 0; i < xs_size; i++) {
                     sxs.xs_.push_back(openbps::udouble(real_xs[i], dev_xs[i]));
+					std::cout << "xs push " << real_xs[i] << std::endl;
                 }
-			} else {
                 for (size_t i = 0; i < rxs_size; i++) {
+					 std::cout << "rxs push ";
+					 std::cout << real_rxs[i] << std::endl;
                      sxs.rxs.push_back(openbps::udouble(real_rxs[i], dev_rxs[i]));
+					 
                 }
-			}
             openbps::compositions[index]->xslib.push_back(sxs);
+			std::cout << "push back " << openbps::compositions[index]->xslib.size() << std::endl;
         } catch (const std::runtime_error& e) {
             return OPENBPS_E_DATA;
         }
     } else {
         //    set_errmsg("Index in composition array is out of bounds.");
+        return OPENBPS_E_OUT_OF_BOUNDS;
+    }
+    return err;
+}
+
+extern "C" int openbps_update_xslib_elem(int32_t index, char* name, char* type,
+                                         double* real_rxs, double* dev_rxs,
+                                         int32_t rxs_size, double* real_xs,
+                                         double* dev_xs, int32_t xs_size) {
+    int err = 0;
+    if (index >= 0 && index < openbps::compositions.size()) {
+        try {
+            openbps::Sxs sxs;
+            std::string stname{name};
+            std::string sttype{type};
+			auto searchelem =
+                std::find_if(openbps::compositions[index]->xslib.begin(), openbps::compositions[index]->xslib.end(),
+                             [stname, sttype](openbps::Sxs& iterx) {
+                                 return ((stname == iterx.xsname) && (sttype == iterx.xstype));
+                             });
+			if (searchelem != openbps::compositions[index]->xslib.end()) {
+				for (size_t i = 0; i < xs_size; i++) {
+                    searchelem->xs_[i] = {real_xs[i], dev_xs[i]};
+                }
+				for (size_t i = 0; i < rxs_size; i++) {
+                    searchelem->rxs[i] = {real_rxs[i], dev_rxs[i]};
+			    }
+			}
+		} catch (const std::runtime_error& e) {
+            return OPENBPS_E_DATA;
+        }
+    } else {
         return OPENBPS_E_OUT_OF_BOUNDS;
     }
     return err;
